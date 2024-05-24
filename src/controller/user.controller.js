@@ -14,6 +14,8 @@ const registerUser = asyncHandler(async (req, res) => {
   // remove password and refresh token field from response
   // check for user creation
   // return res
+
+  // console.log(`Body is :${req.body}`);
   const { fullName, email, password, username } = req.body;
 
   console.table({
@@ -29,15 +31,24 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required");
   }
 
+  // console.log(`Files are :${toString(req.files)}`)
+  console.log(req.files);
+
   const exsistedUser = await User.findOne({ $or: [{ username }, { email }] });
   if (exsistedUser) {
     throw new ApiError(409, "User with email or username already exists");
   }
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
-
-  console.log(avatarLocalPath);
+  let coverImageLocalPath;
+  
+  if (
+    req.files &&
+    Array.isArray(req.files) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files.coverImage[0].path;
+  }
 
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is Required");
@@ -50,7 +61,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is Required");
   }
 
-  const user = User.create({
+  const user = await User.create({
     fullName,
     avatar: avatar.url,
     coverImage: coverImage?.url || "",
@@ -59,21 +70,22 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
   });
 
-  console.log(user);
+  // console.log(`User data is ${user}`);
 
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
 
-  console.log(createdUser);
+  // console.log(createdUser);
 
-  if (createdUser) {
+  if (!createdUser) {
     throw new ApiError(500, "Something Went Wrong while Regestring the user");
   }
 
   return res
     .status(200)
     .json(new ApiResponse(200, createdUser, "User Registration Successfully"));
+
   // const avatarLocalPath = req.files?.avatar[0]?.path;
   // let coverImageLocalPath;
   // if (

@@ -1,1 +1,1 @@
-export const DB_NAME="mainDatabase"
+export const DB_NAME="videoStraming"
